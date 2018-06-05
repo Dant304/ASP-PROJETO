@@ -9,6 +9,7 @@ namespace FECprojeto.Models.Classes.Auxiliares.Sessão
 {
     public static class SessaoSistema
     {
+        
         public static string tipoUsuario
         {
             get
@@ -65,5 +66,7 @@ namespace FECprojeto.Models.Classes.Auxiliares.Sessão
         }
         public static Image imagemUsuario;
         public static string imagemNull;
+       
+
     }
 }

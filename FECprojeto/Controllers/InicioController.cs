@@ -48,7 +48,10 @@ namespace FECprojeto.Controllers
         {
             return PartialView("_config");
         }
-
+        public PartialViewResult telaVideo(int id)
+        {
+            return PartialView("_videosDetalhe", VideoDetails(id));
+        }
         //Artigo
         public List<artigo> ListarArtigos()
         {
@@ -81,16 +84,24 @@ namespace FECprojeto.Controllers
         }
         public PartialViewResult fisioEdit(int id)
         {
-            fisioterapeuta fis =  fn.ObterUmFisio(id);
-            return PartialView("_fisioterapeutaEdit",fis);
+            fisioterapeuta fis = fn.ObterUmFisio(id);
+            return PartialView("_fisioterapeutaEdit", fis);
         }
-        public List<video> videoSource()
+        public List<video> videoSource(string search)
         {
             var varios = new List<video>();
             int id = Convert.ToInt32(Session["id"]);
             if (Session["UsuarioFisio"] != null)
             {
-                varios = fn.TodosOsVideos(id);
+                if (search == null || search == "")
+                {
+                    varios = fn.TodosOsVideos(id);
+                }
+                else
+                {
+                    varios = fn.PesquisarVideos(id, search);
+                }
+
             }
             else if (Session["UsuarioPac"] != null)
             {
@@ -99,180 +110,224 @@ namespace FECprojeto.Controllers
 
             return varios;
         }
-
-        public PartialViewResult _videos(int? id)
+            string varios;
+        public ActionResult _videos(int? id, string search)
         {
-            List<video> varios = videoSource();
-            if (varios.Count == 0)
+        
+             if (id != null || id != 0)
             {
-                ViewBag.Send = "Não há vídeos publicados";
-            }
-            if(id != null)
-            {
-                //eliminar video
-                eliminarVideo(id);
-            }
-            return PartialView(varios);
-        }
-        public void eliminarVideo(int? id)
-        {
-            Videos vid = new Videos();
-            vid.eliminarVideo(id);
-        }
-        public PartialViewResult artigoSource(int? id)
-        {
-            List<artigo> varios = ListarArtigos();
-            if(varios.Count == 0)
-            {
-                ViewBag.mensagem = "Não há artigos publicados";
-            }
-            if(id != null)
-            {
-                eliminarArtigo(id);
-            }
-            
-            return PartialView("_artigo", varios);
-        }
-       
-        public PartialViewResult _fisioterapeutas(string nome)
-        {
-            List<fisioterapeuta> search;
-            if (nome == null)
-            {
-                search = fn.ObterSem();
-            }
-            else
-            {
-                search = fn.pesquisarFisio(nome);
-            }
-           
-            return PartialView(search);
-        }
-
-        public PartialViewResult _fisioterapeutaDetails(int id)
-        {
-            fisioterapeuta search = null;
-            if(id != 0)
-            {
-                search = fn.ObterUmFisio(id);
-            }
-            return PartialView(search);
-        }
-
-        [HttpPost]
-        public ActionResult AlterarSenha(string email, string senhaAtual, string senhaNova, string senhaNova1)
-        {
-
-            if (senhaNova == senhaNova1)
-            {
-                var usuarioF = fn.ObterPorLogin(email, senhaAtual);
-                var usuarioP = pn.ObterPorLogin(email, senhaAtual);
-                if (usuarioF == null && usuarioP == null)
+              
+                if (search != "" || search != null)
                 {
-                    ViewBag.mensagem = "Os dados fornecidos não foram encontrados";
+                   varios = JsonConvert.SerializeObject( videoSource(search),Formatting.Indented,new JsonSerializerSettings {
+                  ReferenceLoopHandling=ReferenceLoopHandling.Ignore
+                  });
                 }
                 else
-                {
-                    if (usuarioF.email_fis == email && usuarioF.senha_fis == senhaAtual)
+                    varios = JsonConvert.SerializeObject(videoSource(null), Formatting.Indented, new JsonSerializerSettings
                     {
-                        fn.AlterarSenha(email, senhaNova);
-                        ViewBag.mensagem = "Dados alterados com sucesso.";
-                    }
-                    else if (usuarioP.email_pac == email && usuarioP.senha_pac == senhaAtual)
-                    {
-
-                    }
-                }
-            }
+                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                    });
+                
+        }
             else
             {
-                ViewBag.mensagem = "Senhas diferentes.";
-            }
+                eliminarVideo(id);
+    }
 
-            return View("_config");
+           
+            return Json(varios, JsonRequestBehavior.AllowGet);
         }
+  
+            public void eliminarVideo(int? id)
+{
+    Videos vid = new Videos();
+    vid.eliminarVideo(id);
+}
+public PartialViewResult artigoSource(int? id)
+{
+    List<artigo> varios = ListarArtigos();
+    if (varios.Count == 0)
+    {
+        ViewBag.mensagem = "Não há artigos publicados";
+    }
+    if (id != null)
+    {
+        eliminarArtigo(id);
+    }
 
+    return PartialView("_artigo", varios);
+}
 
+public PartialViewResult _fisioterapeutas(string nome)
+{
+    List<fisioterapeuta> search;
+    if (nome == null)
+    {
+        search = fn.ObterSem();
+    }
+    else
+    {
+        search = fn.pesquisarFisio(nome);
+    }
 
-        public PartialViewResult _profissionalSource(string nome)
+    return PartialView(search);
+}
+
+public PartialViewResult _fisioterapeutaDetails(int id)
+{
+    fisioterapeuta search = null;
+    if (id != 0)
+    {
+        search = fn.ObterUmFisio(id);
+    }
+    return PartialView(search);
+}
+
+[HttpPost]
+public ActionResult AlterarSenha(string email, string senhaAtual, string senhaNova, string senhaNova1)
+{
+
+    if (senhaNova == senhaNova1)
+    {
+        var usuarioF = fn.ObterPorLogin(email, senhaAtual);
+        var usuarioP = pn.ObterPorLogin(email, senhaAtual);
+        if (usuarioF == null && usuarioP == null)
         {
-            return PartialView();
+            ViewBag.mensagem = "Os dados fornecidos não foram encontrados";
         }
-        [HttpGet]
-        public ActionResult listarFisio(string nome)
+        else
         {
-
-            Fisioterapeuta_Negocios business = new Fisioterapeuta_Negocios();
-            var ret = JsonConvert.SerializeObject(business.ObterFisio(nome), Formatting.Indented, new JsonSerializerSettings
+            if (usuarioF.email_fis == email && usuarioF.senha_fis == senhaAtual)
             {
-                //Ignorando referência circular
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            });
-            //Retornando objeto em JSON
-            return Json(ret, JsonRequestBehavior.AllowGet);
-        }
-
-        // public List<fisioterapeuta> lista(string nome)
-        //    {
-        //      Fisioterapeuta_Negocios business = new Fisioterapeuta_Negocios();
-        //      var fisio = new fisioterapeuta { nome_fis = nome };
-        // var ret = business.ObterFisio(fisio);
-        //    var ret = business.ObterFisio(fisio);
-
-        //  return ret;
-        //   }
-
-        //  public PartialViewResult _profissionalSource()
-        //  {
-
-        //     if (Session["UsuarioFisio"] != null)
-        //   {
-        //       Fisioterapeuta_Negocios fn = new Fisioterapeuta_Negocios();
-        //       var f = fn.ObterSem();
-        //       return PartialView("_fisioterapeutas", f);
-        //    }else if (Session["UsuarioPac"] != null)
-        // {
-        //        Paciente =
-        //     }
-
-        //   }
-
-        //   public List<fisioterapeuta> fisio()
-        //  {
-
-        //  }
-     
-       public void eliminarArtigo(int? id)
-        {
-            Artigos art = new Artigos();
-            art.eliminarArt(id);
-        }
-        [HttpPost]
-        public ActionResult Oi(HttpPostedFileBase file)
-        {
-
-            try
-            {
-                if (file.ContentLength > 0)
-                {
-                    int fl = file.ContentLength;
-                    byte[] array = new byte[fl];
-                    file.InputStream.Read(array, 0, fl);
-                    
-                   
-                }
-                ViewBag.Message = "File Uploaded Successfully!!";
-                return RedirectToAction("View","PageNotFound");
+                fn.AlterarSenha(email, senhaNova);
+                ViewBag.mensagem = "Dados alterados com sucesso.";
             }
-            catch
+            else if (usuarioP.email_pac == email && usuarioP.senha_pac == senhaAtual)
             {
-                ViewBag.Message = "File upload failed!!";
-                return RedirectToAction("View", "PageNotFound");
+
             }
+        }
+    }
+    else
+    {
+        ViewBag.mensagem = "Senhas diferentes.";
+    }
+
+    return View("_config");
+}
+
+public PartialViewResult telaCadastroFisio()
+{
+    return PartialView("_fisioterapeutaCreate");
+}
+public PartialViewResult Chat()
+{
+    return PartialView();
+}
+public PartialViewResult _profissionalSource(string nome)
+{
+    return PartialView();
+}
+[HttpGet]
+public ActionResult listarFisio(string nome)
+{
+
+    Fisioterapeuta_Negocios business = new Fisioterapeuta_Negocios();
+    var ret = JsonConvert.SerializeObject(business.ObterFisio(nome), Formatting.Indented, new JsonSerializerSettings
+    {
+        //Ignorando referência circular
+        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+    });
+    //Retornando objeto em JSON
+    return Json(ret, JsonRequestBehavior.AllowGet);
+}
+
+// public List<fisioterapeuta> lista(string nome)
+//    {
+//      Fisioterapeuta_Negocios business = new Fisioterapeuta_Negocios();
+//      var fisio = new fisioterapeuta { nome_fis = nome };
+// var ret = business.ObterFisio(fisio);
+//    var ret = business.ObterFisio(fisio);
+
+//  return ret;
+//   }
+
+//  public PartialViewResult _profissionalSource()
+//  {
+
+//     if (Session["UsuarioFisio"] != null)
+//   {
+//       Fisioterapeuta_Negocios fn = new Fisioterapeuta_Negocios();
+//       var f = fn.ObterSem();
+//       return PartialView("_fisioterapeutas", f);
+//    }else if (Session["UsuarioPac"] != null)
+// {
+//        Paciente =
+//     }
+
+//   }
+
+//   public List<fisioterapeuta> fisio()
+//  {
+
+//  }
+
+public void eliminarArtigo(int? id)
+{
+    Artigos art = new Artigos();
+    art.eliminarArt(id);
+}
+[HttpPost]
+public ActionResult Oi(HttpPostedFileBase file)
+{
+
+    try
+    {
+        if (file.ContentLength > 0)
+        {
+            int fl = file.ContentLength;
+            byte[] array = new byte[fl];
+            file.InputStream.Read(array, 0, fl);
+
 
         }
+        ViewBag.Message = "File Uploaded Successfully!!";
+        return RedirectToAction("View", "PageNotFound");
+    }
+    catch
+    {
+        ViewBag.Message = "File upload failed!!";
+        return RedirectToAction("View", "PageNotFound");
+    }
+
+}
+public PartialViewResult _novoVideo()
+{
+    return PartialView();
+}
+[HttpGet]
+public RedirectToRouteResult CadastrarVideo(string titulo, string url, String text)
+{
+
+    Videos v = new Videos()
+    {
+        tituloVideo = titulo,
+        dataVideo = DateTime.Now,
+        descricaoVideo = text,
+        url = url
+    };
+    v.EnviarVideo(v);
+
+    return RedirectToAction("_videos");
+}
+public string sessaoTime()
+{
+    return Session.Timeout.ToString();
+}
+
     }
 }
 
-    
+
 
